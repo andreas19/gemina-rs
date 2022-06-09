@@ -1,0 +1,17 @@
+[package]
+name = "gemina"
+version = "0.0.0"
+edition = "2021"
+authors = ["Andreas Suhre <andreas19@posteo.eu>"]
+description = "Implementation of the Gemina specification."
+readme = "README.md"
+homepage = "https://github.com/andreas19/gemina-rs/"
+documentation = "https://docs.rs/gemina/"
+repository = "https://github.com/andreas19/gemina-rs/"
+license = "BSD-3-Clause"
+keywords = [] # max. 5
+categories = [] # max. 5 (https://crates.io/category_slugs)
+publish = false
+
+[dependencies]
+anyhow = "1.0.57"
