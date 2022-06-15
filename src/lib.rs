@@ -4,8 +4,10 @@
 //!
 //! [specification]: https://github.com/andreas19/gemina-spec#specification-of-the-gemina-format
 
-use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
-use aes::{Aes128, Aes192, Aes256};
+use aes::{
+    cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit},
+    Aes128, Aes192, Aes256,
+};
 use anyhow::{anyhow, bail, Result};
 use cbc::{Decryptor, Encryptor};
 use hmac::{Hmac, Mac};
@@ -71,8 +73,7 @@ const VERSION_PROPS: [VersionProperties; 4] = [
 /// Creates a secret key.
 pub fn create_secret_key(version: Version) -> Result<Vec<u8>> {
     let props = &VERSION_PROPS[version as usize];
-    let key_len = props.enc_key_len + props.mac_key_len;
-    let mut key = vec![0u8; key_len];
+    let mut key = vec![0u8; props.enc_key_len + props.mac_key_len];
     getrandom::getrandom(&mut key)?;
     Ok(key)
 }
@@ -191,15 +192,15 @@ fn derive_key(
     salt: &[u8],
     props: &VersionProperties,
 ) -> Result<(Vec<u8>, Vec<u8>)> {
-    let key_len = props.enc_key_len + props.mac_key_len;
-    let mut key = vec![0u8; key_len];
-    let mut salt_vec = Vec::with_capacity(SALT_LEN);
-    if salt.is_empty() {
-        salt_vec.resize(SALT_LEN, 8u8);
-        getrandom::getrandom(&mut salt_vec)?;
+    let mut key = vec![0u8; props.enc_key_len + props.mac_key_len];
+    let salt_vec = if salt.is_empty() {
+        let mut buf = [0u8; SALT_LEN];
+        getrandom::getrandom(&mut buf)?;
+        Vec::from(buf)
     } else {
-        salt_vec.extend_from_slice(salt);
-    }
+        Vec::from(salt)
+    };
+
     pbkdf2::pbkdf2::<HmacSha256>(password, &salt_vec, ITERATIONS, &mut key);
     Ok((key, salt_vec))
 }
