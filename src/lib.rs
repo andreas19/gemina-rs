@@ -25,6 +25,7 @@ type HmacSha256 = Hmac<Sha256>;
 
 /// Version enum.
 #[derive(Clone, Copy)]
+#[non_exhaustive]
 pub enum Version {
     /// Version 1
     V1,
