@@ -28,6 +28,32 @@ const DATA_E: &[u8] = &[
     174, 19, 138, 250, 192, 177, 195, 173, 141, 30, 2, 73, 53, 148, 139, 21, 82, 77, 94, 192, 29,
     90, 176, 208, 137,
 ];
+// keys with errors
+const KEY_E: &[u8] = &[
+    0, 200, 14, 253, 108, 252, 42, 29, 41, 102, 69, 70, 106, 66, 164, 226, 130, 243, 169, 1, 70,
+    214, 114, 133, 29, 168, 33, 28, 51, 58, 114, 65, 14, 244, 245, 64, 26, 143, 148, 247, 99, 230,
+    181, 174, 242, 124, 107, 243, 224, 183, 31, 188, 129, 158, 138, 41, 41, 76, 135, 22, 176, 193,
+    173, 164,
+];
+const KEY_M: &[u8] = &[
+    50, 200, 14, 253, 108, 252, 42, 29, 41, 102, 69, 70, 106, 66, 164, 226, 130, 243, 169, 1, 70,
+    214, 114, 133, 29, 168, 33, 28, 51, 58, 114, 65, 14, 244, 245, 64, 26, 143, 148, 247, 99, 230,
+    181, 174, 242, 124, 107, 243, 224, 183, 31, 188, 129, 158, 138, 41, 41, 76, 135, 22, 176, 193,
+    173, 0,
+];
+// data with errors
+const DATA_D: &[u8] = &[
+    141, 195, 137, 39, 18, 219, 146, 189, 198, 72, 8, 228, 26, 248, 174, 240, 239, 43, 102, 0, 40,
+    111, 17, 233, 144, 121, 187, 245, 155, 50, 163, 31, 67, 244, 164, 237, 123, 146, 215, 187, 238,
+    250, 157, 164, 255, 123, 1, 198, 112, 154, 109, 153, 238, 56, 168, 189, 52, 167, 207, 22, 244,
+    151, 231, 115, 250, 204, 30, 39, 70, 189, 165, 120, 45, 39, 149, 176, 84, 223, 146, 69, 225,
+];
+const DATA_M: &[u8] = &[
+    141, 195, 137, 39, 18, 219, 146, 189, 198, 72, 8, 228, 26, 248, 174, 240, 239, 43, 102, 187,
+    40, 111, 17, 233, 144, 121, 187, 245, 155, 50, 163, 31, 67, 244, 164, 237, 123, 146, 215, 187,
+    238, 250, 157, 164, 255, 123, 1, 198, 112, 154, 109, 153, 238, 56, 168, 189, 52, 167, 207, 22,
+    244, 151, 231, 115, 250, 204, 30, 39, 70, 189, 165, 120, 45, 39, 149, 176, 84, 223, 146, 69, 0,
+];
 
 #[test]
 fn test_decrypt_with_key() {
@@ -72,4 +98,50 @@ fn test_empty() {
     assert!(gemina::verify_with_key(&key, &data));
     let data = gemina::decrypt_with_key(&key, &data).unwrap();
     assert_eq!(String::from_utf8(data).unwrap(), "");
+}
+
+#[test]
+fn test_wrong_key() {
+    assert!(gemina::verify_with_key(KEY_E, DATA_K));
+    assert!(!gemina::verify_with_key(KEY_M, DATA_K));
+    assert_ne!(
+        gemina::decrypt_with_key(KEY_E, DATA_K)
+            .unwrap_err()
+            .to_string(),
+        "signature could not be verified".to_string()
+    );
+    assert_eq!(
+        gemina::decrypt_with_key(KEY_M, DATA_K)
+            .unwrap_err()
+            .to_string(),
+        "signature could not be verified".to_string()
+    );
+    assert_eq!(
+        gemina::encrypt_with_key(&KEY[1..], TEXT.as_bytes(), VERSION)
+            .unwrap_err()
+            .to_string(),
+        "incorrect secret key size".to_string()
+    );
+}
+
+#[test]
+fn test_data_error() {
+    assert!(!gemina::verify_with_key(KEY, DATA_D));
+    assert_eq!(
+        gemina::decrypt_with_key(KEY, DATA_D)
+            .unwrap_err()
+            .to_string(),
+        "signature could not be verified".to_string()
+    );
+}
+
+#[test]
+fn test_mac_error() {
+    assert!(!gemina::verify_with_key(KEY, DATA_M));
+    assert_eq!(
+        gemina::decrypt_with_key(KEY, DATA_M)
+            .unwrap_err()
+            .to_string(),
+        "signature could not be verified".to_string()
+    );
 }
