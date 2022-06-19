@@ -22,6 +22,12 @@ const DATA_P: &[u8] = &[
     131, 147, 65, 61, 39, 180, 117, 204, 160, 102, 29, 153, 196, 79, 40, 98, 215, 238, 176, 22, 41,
     103, 236, 136, 116, 92, 97, 112, 117, 222, 31, 252, 199, 12,
 ];
+const DATA_E: &[u8] = &[
+    141, 138, 201, 163, 133, 120, 141, 69, 194, 13, 220, 205, 178, 14, 112, 163, 92, 112, 185, 119,
+    0, 9, 233, 206, 253, 148, 114, 210, 144, 222, 166, 236, 19, 219, 218, 97, 244, 113, 72, 104,
+    174, 19, 138, 250, 192, 177, 195, 173, 141, 30, 2, 73, 53, 148, 139, 21, 82, 77, 94, 192, 29,
+    90, 176, 208, 137,
+];
 
 #[test]
 fn test_decrypt_with_key() {
@@ -51,4 +57,19 @@ fn test_with_password() {
     assert!(gemina::verify_with_password(pass, &data));
     let data = gemina::decrypt_with_password(pass, &data).unwrap();
     assert_eq!(String::from_utf8(data).unwrap(), TEXT);
+}
+
+#[test]
+fn test_decrypt_empty() {
+    let data = gemina::decrypt_with_key(KEY, DATA_E).unwrap();
+    assert_eq!(String::from_utf8(data).unwrap(), "");
+}
+
+#[test]
+fn test_empty() {
+    let key = gemina::create_secret_key(VERSION).unwrap();
+    let data = gemina::encrypt_with_key(&key, "".as_bytes(), VERSION).unwrap();
+    assert!(gemina::verify_with_key(&key, &data));
+    let data = gemina::decrypt_with_key(&key, &data).unwrap();
+    assert_eq!(String::from_utf8(data).unwrap(), "");
 }
