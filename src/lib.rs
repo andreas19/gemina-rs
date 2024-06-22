@@ -19,7 +19,6 @@ const MAC_LEN: usize = 32; // bytes
 const SALT_LEN: usize = 16; // bytes
 const VERSION_LEN: usize = 1; // byte
 const MIN_LEN: usize = VERSION_LEN + 2 * BLOCK_LEN + MAC_LEN;
-const ITERATIONS: u32 = 100_000;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -35,6 +34,8 @@ pub enum Version {
     V3,
     /// Version 4
     V4,
+    /// Version 5
+    V5,
 }
 
 struct VersionProperties {
@@ -42,33 +43,45 @@ struct VersionProperties {
     version_byte: u8,
     enc_key_len: usize, // bytes
     mac_key_len: usize, // bytes
+    iterations: u32
 }
 
-const VERSION_PROPS: [VersionProperties; 4] = [
+const VERSION_PROPS: [VersionProperties; 5] = [
     VersionProperties {
         version: Version::V1,
         version_byte: 0x8a,
         enc_key_len: 16,
         mac_key_len: 16,
+        iterations: 100_000,
     },
     VersionProperties {
         version: Version::V2,
         version_byte: 0x8b,
         enc_key_len: 16,
         mac_key_len: 32,
+        iterations: 100_000,
     },
     VersionProperties {
         version: Version::V3,
         version_byte: 0x8c,
         enc_key_len: 24,
         mac_key_len: 32,
+        iterations: 100_000,
     },
     VersionProperties {
         version: Version::V4,
         version_byte: 0x8d,
         enc_key_len: 32,
         mac_key_len: 32,
+        iterations: 100_000,
     },
+    VersionProperties {
+        version: Version::V5,
+        version_byte: 0x8e,
+        enc_key_len: 32,
+        mac_key_len: 32,
+        iterations: 600_000,
+    }
 ];
 
 /// Creates a secret key.
@@ -145,7 +158,7 @@ fn decrypt(key: &[u8], data: &[u8], props: &VersionProperties, with_salt: bool) 
                 .decrypt_padded_vec_mut::<Pkcs7>(ct),
             Version::V3 => Decryptor::<Aes192>::new(enc_key.into(), iv.into())
                 .decrypt_padded_vec_mut::<Pkcs7>(ct),
-            Version::V4 => Decryptor::<Aes256>::new(enc_key.into(), iv.into())
+            Version::V4 | Version::V5 => Decryptor::<Aes256>::new(enc_key.into(), iv.into())
                 .decrypt_padded_vec_mut::<Pkcs7>(ct),
         };
     Ok(res?)
@@ -163,7 +176,7 @@ fn encrypt(key: &[u8], salt: &[u8], data: &[u8], props: &VersionProperties) -> R
             .encrypt_padded_vec_mut::<Pkcs7>(data),
         Version::V3 => Encryptor::<Aes192>::new(enc_key.into(), &iv.into())
             .encrypt_padded_vec_mut::<Pkcs7>(data),
-        Version::V4 => Encryptor::<Aes256>::new(enc_key.into(), &iv.into())
+        Version::V4 | Version::V5 => Encryptor::<Aes256>::new(enc_key.into(), &iv.into())
             .encrypt_padded_vec_mut::<Pkcs7>(data),
     };
     vec.append(&mut ct);
@@ -202,7 +215,7 @@ fn derive_key(
         Vec::from(salt)
     };
 
-    pbkdf2::pbkdf2::<HmacSha256>(password, &salt_vec, ITERATIONS, &mut key);
+    let _ = pbkdf2::pbkdf2::<HmacSha256>(password, &salt_vec, props.iterations, &mut key);
     Ok((key, salt_vec))
 }
 
